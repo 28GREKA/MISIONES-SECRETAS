@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misiones Secretas - Agente</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 { color: #00ff88; margin-bottom: 15px; font-size: 1.3em; }
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+        input:focus { outline: none; border-color: #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #000;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,255,136,0.4); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+        }
+        .token-display {
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            color: #00ff88;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .mision {
+            background: rgba(0,255,136,0.05);
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .mision h3 { color: #00ff88; margin-bottom: 8px; }
+        .mision p { color: #aaa; font-size: 0.9em; margin-bottom: 10px; }
+        .mision .info { display: flex; justify-content: space-between; align-items: center; }
+        .mision .dificultad { color: #ffd700; font-size: 0.85em; }
+        .mision .puntos { color: #00ff88; font-weight: bold; }
+        .mision.bloqueada { opacity: 0.5; border-color: #ff6b6b; }
+        .mision.bloqueada h3 { color: #ff6b6b; }
+        .mision button { padding: 8px 20px; width: auto; font-size: 0.9em; }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,255,136,0.1);
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+        }
+        .status-bar .agente { color: #00ff88; font-weight: bold; }
+        .status-bar .timer { color: #ffd700; font-family: monospace; }
+        .alert {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .alert-error { background: rgba(255,107,107,0.2); border: 1px solid #ff6b6b; color: #ff6b6b; }
+        .alert-success { background: rgba(0,255,136,0.2); border: 1px solid #00ff88; color: #00ff88; }
+        .alert-warning { background: rgba(255,215,0,0.2); border: 1px solid #ffd700; color: #ffd700; }
+        .hidden { display: none !important; }
+        .perfil-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .perfil-info .item { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; }
+        .perfil-info .label { color: #888; font-size: 0.8em; }
+        .perfil-info .value { color: #00ff88; font-weight: bold; font-size: 1.1em; }
+        .puntuacion { text-align: center; font-size: 2em; color: #ffd700; margin: 10px 0; }
+        .codigo-hint { color: #666; font-size: 0.85em; margin-top: 10px; text-align: center; }
+        .codigo-hint code { color: #00ff88; background: rgba(0,255,136,0.1); padding: 2px 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MISIONES SECRETAS</h1>
+        <p class="subtitle">Sistema de Acceso con JWT - Agencia de Inteligencia</p>
+
+        <div id="alerta" class="alert"></div>
+
+        <div id="login-section" class="card">
+            <h2>Acceso de Agente</h2>
+            <p style="color:#888; margin-bottom:15px;">Ingresa tu código de agente para obtener tu token de acceso.</p>
+            <input type="text" id="codigo" placeholder="Código de agente (ej: AGENTE-001)">
+            <button onclick="login()">INICIAR SESIÓN</button>
+            <p class="codigo-hint">Códigos válidos: <code>AGENTE-001</code> a <code>AGENTE-005</code></p>
+        </div>
+
+        <div id="dashboard" class="hidden">
+            <div class="status-bar">
+                <span class="agente" id="agente-nombre"></span>
+                <span class="timer" id="token-timer">Token: 30s</span>
+            </div>
+
+            <div class="card">
+                <h2>Tu Credencial (Access Token)</h2>
+                <div class="token-display" id="access-token-display"></div>
+                <button class="btn-secondary" onclick="renovarToken()">RENOVAR TOKEN</button>
+            </div>
+
+            <div class="card">
+                <h2>Perfil de Agente</h2>
+                <div class="perfil-info" id="perfil-info"></div>
+            </div>
+
+            <div class="card">
+                <h2>Misiones Disponibles</h2>
+                <div class="puntuacion">Puntos: <span id="puntos">0</span></div>
+                <div id="misiones-list"></div>
+            </div>
+
+            <div class="card">
+                <h2>Refresh Token</h2>
+                <div class="token-display" id="refresh-token-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accessToken = null;
+        let refreshToken = null;
+        let tokenExpiraEn = 0;
+        let timerInterval = null;
+        let puntos = 0;
+
+        function mostrarAlerta(mensaje, tipo) {
+            const alerta = document.getElementById('alerta');
+            alerta.textContent = mensaje;
+            alerta.className = `alert alert-${tipo}`;
+            alerta.style.display = 'block';
+            setTimeout(() => { alerta.style.display = 'none'; }, 4000);
+        }
+
+        async function login() {
+            const codigo = document.getElementById('codigo').value.trim();
+            if (!codigo) { mostrarAlerta('Ingresa tu código de agente', 'error'); return; }
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo })
+                });
+                const data = await res.json();
+
+                if (!res.ok) { mostrarAlerta(data.error, 'error'); return; }
+
+                accessToken = data.accessToken;
+                refreshToken = data.refreshToken;
+                tokenExpiraEn = data.expiraEn;
+                puntos = 0;
+
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('agente-nombre').textContent = data.mensaje;
+                document.getElementById('access-token-display').textContent = accessToken;
+                document.getElementById('refresh-token-display').textContent = refreshToken;
+                document.getElementById('puntos').textContent = '0';
+
+                iniciarTimer();
+                cargarPerfil();
+                cargarMisiones();
+                mostrarAlerta('Token de acceso generado correctamente', 'success');
+            } catch (e) {
+                mostrarAlerta('Error de conexión con el servidor', 'error');
+            }
+        }
+
+        function iniciarTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            let restante = tokenExpiraEn;
+            document.getElementById('token-timer').textContent = `Token: ${restante}s`;
+
+            timerInterval = setInterval(() => {
+                restante--;
+                document.getElementById('token-timer').textContent = `Token: ${restante}s`;
+                if (restante <= 5) {
+                    document.getElementById('token-timer').style.color = '#ff6b6b';
+                }
+                if (restante <= 0) {
+                    clearInterval(timerInterval);
+                    mostrarAlerta('Token expirado. Rénévalo para continuar.', 'warning');
+                }
+            }, 1000);
+        }
+
+        async function renovarToken() {
+            try {
+                const res = await fetch('/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+                const data = await res.json();
+
+                if (!res.ok) { mostrarAlerta(data.error, 'error'); return; }
+
+                accessToken = data.accessToken;
+                tokenExpiraEn = data.expiraEn;
+                document.getElementById('access-token-display').textContent = accessToken;
+                document.getElementById('token-timer').style.color = '#ffd700';
+                iniciarTimer();
+                mostrarAlerta('Token renovado exitosamente', 'success');
+            } catch (e) {
+                mostrarAlerta('Error al renovar token', 'error');
+            }
+        }
+
+        async function cargarPerfil() {
+            try {
+                const res = await fetch('/perfil', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const data = await res.json();
+
+                if (data.expirado) { mostrarAlerta('Token expirado. Rénévalo.', 'warning'); return; }
+                if (!res.ok) { mostrarAlerta(data.error, 'error'); return; }
+
+                document.getElementById('perfil-info').innerHTML = `
+                    <div class="item"><div class="label">Código</div><div class="value">${data.codigo}</div></div>
+                    <div class="item"><div class="label">Nombre</div><div class="value">${data.nombre}</div></div>
+                    <div class="item"><div class="label">Nivel</div><div class="value">${data.nivel}</div></div>
+                    <div class="item"><div class="label">Rango</div><div class="value">${data.rango}</div></div>
+                `;
+            } catch (e) {
+                mostrarAlerta('Error al cargar perfil', 'error');
+            }
+        }
+
+        async function cargarMisiones() {
+            try {
+                const res = await fetch('/misiones', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const data = await res.json();
+
+                if (data.expirado) { mostrarAlerta('Token expirado. Rénévalo.', 'warning'); return; }
+                if (!res.ok) { mostrarAlerta(data.error, 'error'); return; }
+
+                let html = '';
+                data.misionesDisponibles.forEach(m => {
+                    html += `
+                        <div class="mision">
+                            <h3>${m.titulo}</h3>
+                            <p>${m.descripcion}</p>
+                            <div class="info">
+                                <span class="dificultad">${m.dificultad}</span>
+                                <span class="puntos">+${m.puntos} pts</span>
+                                <button onclick="completarMision(${m.id})">COMPLETAR</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                data.misionesBloqueadas.forEach(m => {
+                    html += `
+                        <div class="mision bloqueada">
+                            <h3>BLOQUEADA</h3>
+                            <p>Requiere nivel ${m.nivelRequerido}</p>
+                            <div class="info">
+                                <span class="dificultad">${m.dificultad}</span>
+                                <span class="puntos">+${m.puntos} pts</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('misiones-list').innerHTML = html;
+            } catch (e) {
+                mostrarAlerta('Error al cargar misiones', 'error');
+            }
+        }
+
+        async function completarMision(misionId) {
+            try {
+                const res = await fetch('/completar-mision', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({ misionId })
+                });
+                const data = await res.json();
+
+                if (data.expirado) { mostrarAlerta('Token expirado. Rénévalo.', 'warning'); return; }
+                if (!res.ok) { mostrarAlerta(data.error, 'error'); return; }
+
+                puntos += data.puntosGanados;
+                document.getElementById('puntos').textContent = puntos;
+                mostrarAlerta(`+${data.puntosGanados} puntos ganados`, 'success');
+            } catch (e) {
+                mostrarAlerta('Error al completar misión', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
